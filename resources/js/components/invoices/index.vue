@@ -2,15 +2,20 @@
     import axios from 'axios';
 import { onMounted, ref } from 'vue';
 
-    let invoices = ref([])
+    const invoices = ref([])
 
-    onMounted(async () =>{
+   
+    const getInvoices = async () => {
+await axios.get('http://localhost:8000/api/invoices')
+    .then(res => invoices.value = res.data.invoices)
+    .catch(error => {
+        console.error(error);
+    });
+};
+ onMounted(async () =>{
         getInvoices()
     });
-    const getInvoices = async() =>{
-        let response = await axios.get("/api/get_allInvoices")
-        console.log('response:', response)
-    }
+
 </script>
 <template>
     
@@ -72,13 +77,16 @@ import { onMounted, ref } from 'vue';
             </div>
 
             <!-- item 1 -->
-            <div class="table--items">
+            <div class="table--items " v-for="item in invoices" :key="item.id" v-if="invoices.length > 0">
                 <a href="#" class="table--items--transactionId">#093654</a>
-                <p>Jan 18, 9:31am</p>
-                <p>#093654</p>
-                <p>Jonathan Yu</p>
-                <p>Jan 18, 9:31am</p>
-                <p> $ 16,943</p>
+                <p>{{item.date}}</p>
+                <p>#{{ item.number }}</p>
+                <p>{{ item.customer_id }}</p>
+                <p>{{item.due_date}}</p>
+                <p> ${{ item.total}}</p>
+            </div>
+            <div class="table--items" v-else>
+                <p>No invoices founded.</p>
             </div>
         </div>
         
