@@ -1,24 +1,35 @@
 <script setup>
-    import axios from 'axios';
+
+import axios from 'axios';
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-    const invoices = ref([])
+const router = useRouter()
 
-   
-    const getInvoices = async () => {
-await axios.get('http://localhost:8000/api/invoices')
-    .then(res => invoices.value = res.data.invoices)
-    .catch(error => {
-        console.error(error);
-    });
-};
- onMounted(async () =>{
-        getInvoices()
-    });
+let invoices = ref([])
+let searchInvoice = ref([])
+
+onMounted(async () => {
+    getInvoices();
+})
+const getInvoices = async () =>{
+  try {
+    const response = await axios.get('/invoices');
+    invoices.value = response.data.data; 
+} catch (error) {
+    console.error('Error fetching invoices:', error);
+  }
+}
+
+const newInvoice = async () =>{
+    let form = await axios.get('/newInvoice') 
+    console.log(form.data)
+   router.push('/invoice/new')
+}
 
 </script>
 <template>
-    
+    <!--  -->
     <div class="container">
         
     <div class="invoices">
@@ -28,7 +39,7 @@ await axios.get('http://localhost:8000/api/invoices')
                 <h2 class="invoice__title">Invoices</h2>
             </div>
             <div>
-                <a class="btn btn-secondary">
+                <a class="btn btn-secondary" @click="newInvoice">
                     New Invoice
                 </a>
             </div>
@@ -78,16 +89,20 @@ await axios.get('http://localhost:8000/api/invoices')
 
             <!-- item 1 -->
             <div class="table--items " v-for="item in invoices" :key="item.id" v-if="invoices.length > 0">
-                <a href="#" class="table--items--transactionId">#093654</a>
+                <a href="#" class="table--items--transactionId">{{item.id}}</a>
                 <p>{{item.date}}</p>
                 <p>#{{ item.number }}</p>
-                <p>{{ item.customer_id }}</p>
+                <p v-if="item.customer">
+                    {{ item.customer.firstname }}
+                </p>
+                <p v-else></p>
                 <p>{{item.due_date}}</p>
                 <p> ${{ item.total}}</p>
             </div>
             <div class="table--items" v-else>
-                <p>No invoices founded.</p>
+                <p>No invoices founded</p>
             </div>
+           
         </div>
         
     </div>
