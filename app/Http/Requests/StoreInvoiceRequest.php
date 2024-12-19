@@ -11,7 +11,7 @@ class StoreInvoiceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,19 @@ class StoreInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'sub_total' => 'required|numeric',
+            'total' => 'required|numeric',
+            'number' => 'required|string',
+            'terms_and_conditions' => 'required|string',
+            'date' => 'required|date',
+            'due_date' => 'required|date',
+            'reference' => 'required',
+            'customer_id' => 'required|exists:customers,id', // Ensure that customer_id exists in the customers table
+            'discount' => 'nullable|numeric',
+            'invoice_item' => 'required|array|min:1', // Make sure invoice_item is an array and not empty
+            'invoice_item.*.id' => 'required|exists:products,id', // Ensure each item has a valid product_id
+            'invoice_item.*.quantity' => 'required|numeric|min:1', // Quantity should be a number greater than 0
+            'invoice_item.*.unit_price' => 'required|numeric|min:0', // Unit price should be numeric and greater than or equal to 0
         ];
     }
 }

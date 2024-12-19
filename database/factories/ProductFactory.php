@@ -19,7 +19,7 @@ class ProductFactory extends Factory
         return [
             'item code' =>'IC-1000'.rand(10, 500),
             'description' => 'name of Product'.rand(10, 500),
-            'price' => mt_rand(10, 1000)
+            'unit_price' => mt_rand(10, 1000)
         ];
     }
 }
