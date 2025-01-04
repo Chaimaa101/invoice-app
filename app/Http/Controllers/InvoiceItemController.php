@@ -61,6 +61,7 @@ class InvoiceItemController extends Controller
      */
     public function destroy(InvoiceItem $invoiceItem)
     {
-        //
+        $item = InvoiceItem::findOrFail($invoiceItem->id);
+        $item->delete(); 
     }
 }

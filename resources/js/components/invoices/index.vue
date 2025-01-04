@@ -15,6 +15,7 @@ const getInvoices = async () => {
     try {
         const response = await axios.get('/invoices');
         invoices.value = response.data.data;
+        console.log(invoices.value)
     } catch (error) {
         console.error('Error fetching invoices:', error);
     }
@@ -26,13 +27,12 @@ const newInvoice = async () => {
     router.push('/invoice/new')
 }
 
-const onShow = (id) =>{
-    router.push('/invoices/show/' + id)
+const onShow = async (id) =>{
+    router.push(`/invoices/show/` + id)
 }
 
 </script>
 <template>
-    <!--  -->
     <div class="container">
 
         <div class="invoices">

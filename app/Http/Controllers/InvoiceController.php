@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateInvoiceRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Counter;
 use App\Models\InvoiceItem;
-use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvoiceController extends Controller
@@ -16,7 +16,7 @@ class InvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() : AnonymousResourceCollection
+    public function index(): AnonymousResourceCollection
     {
         $invoices = Invoice::with('customer')->orderBy('id', 'DESC')->get();
         return InvoiceResource::collection($invoices);
@@ -46,8 +46,8 @@ class InvoiceController extends Controller
             'due_date' => null,
             'reference' => null,
             'discount' => 0,
-            'term and conditions' => 'Default Terms and  Conditions',
-            'items' => [
+            'term_and_conditions' => 'Default Terms and  Conditions',
+            'invoiceItem' => [
                 [
                     'product_id' => null,
                     'product' => null,
@@ -66,51 +66,46 @@ class InvoiceController extends Controller
 
     public function store(StoreInvoiceRequest $request)
     {
-        try {
-        log::info('Invoice Data:', $request->all());
-            $invoiceItem = $request->input("invoice_item");
 
-            $invoiceData = [
-                'sub_total' => $request->input("sub_total"),
-                'total' => $request->input("total"),
-                'reference' => $request->input("reference"),
-                'number' => $request->input("number"),
-                'terms_and_conditions' => $request->input("terms_and_conditions"),
-                'date' => $request->input("date"),
-                'due_date' => $request->input("due_date"),
-                'customer_id' => $request->input("customer_id"),
-                'discount' => $request->input("discount"),
-            ];
+        $invoiceItem = $request->input("invoiceItem");
 
-            $invoice = Invoice::create($invoiceData);
+        $invoiceData = [
+            'sub_total' => $request->input("sub_total"),
+            'total' => $request->input("total"),
+            'reference' => $request->input("reference"),
+            'number' => $request->input("number"),
+            'terms_and_conditions' => $request->input("terms_and_conditions"),
+            'date' => $request->input("date"),
+            'due_date' => $request->input("due_date"),
+            'customer_id' => $request->input("customer_id"),
+            'discount' => $request->input("discount"),
+        ];
 
-            foreach (json_decode($invoiceItem) as $item) {
-                InvoiceItem::create([
-                    'product_id' => $item->id,
-                    'invoice_id' => $invoice->id,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                ]);
-            }
+        $invoice = Invoice::create($invoiceData);
 
-    return response()->json(['message' => 'Invoice created successfully'], 201); 
-    } catch (\Exception $e) {
-        Log::error('Error creating invoice:', ['exception' => $e]);
-
-        if ($e instanceof \Illuminate\Validation\ValidationException) {
-            return response()->json(['errors' => $e->errors()], 422); 
+        foreach ($invoiceItem as $item) {
+            InvoiceItem::create([
+                'product_id' => $item['id'],  // Corrected to array access
+                'invoice_id' => $invoice->id,
+                'quantity' => $item['quantity'],  // Corrected to array access
+                'unit_price' => $item['unit_price'],
+            ]);
         }
 
-        return response()->json(['message' => 'An error occurred while creating the invoice.'], 500);
-    
+        return response()->json(['message' => 'Invoice created successfully'], 201);
     }
-}
     /**
      * Display the specified resource.
      */
-    public function show(Invoice $invoice)
+    public function show($id)
     {
-        //
+        $invoice = Invoice::with(['customer', 'invoice_items.product'])->find($id);
+
+        if (!$invoice) {
+            return response()->json(['message' => 'Invoice not found'], 404);
+        }
+
+        return new InvoiceResource($invoice);
     }
 
     /**
@@ -126,7 +121,7 @@ class InvoiceController extends Controller
      */
     public function update(UpdateInvoiceRequest $request, Invoice $invoice)
     {
-        //
+        
     }
 
     /**

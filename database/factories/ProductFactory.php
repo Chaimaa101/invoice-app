@@ -17,7 +17,7 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            'item code' =>'IC-1000'.rand(10, 500),
+            'item_code' =>'IC-1000'.rand(10, 500),
             'description' => 'name of Product'.rand(10, 500),
             'unit_price' => mt_rand(10, 1000)
         ];

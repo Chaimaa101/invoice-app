@@ -1,25 +1,27 @@
 <script setup>
+
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
 
-axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-axios.defaults.withCredentials = true;
-
-let form = ref([])
-let customers = ref([])
-let customer_id = ref([])
-let listCart = ref([])
+let invoice = ref({ id: '' })
 let listProducts = ref([])
+let customer_id = ref([])
+let customers = ref([])
+let listCart = ref([])
 const showModal = ref(false)
 const hideModal = ref(true)
-import { useRouter } from 'vue-router';
-
-const router = useRouter()
 
 onMounted(async () => {
     getCustomers()
-    newInvoice()
+    getInvoice()
     getProducts()
+})
+
+const props = defineProps({
+    id: {
+        type: String,
+        default: ''
+    }
 })
 
 const addCart = (item) => {
@@ -34,14 +36,16 @@ const addCart = (item) => {
     closeModal()
 }
 
-const newInvoice = async () => {
+const getInvoice = async () => {
     try {
-        const response = await axios.get('/invoices/create')
-        form.value = response.data
+        const res = await axios.get(`/invoices/${props.id}`);
+        invoice.value = res.data.data;
+        console.log(invoice.value);
     } catch (error) {
-        console.error('Error fetching form infos:', error);
+        console.error('Error fetching invoice:', error);
     }
-}
+};
+
 const getCustomers = async () => {
     try {
         const response = await axios.get('/customers');
@@ -60,10 +64,6 @@ const getProducts = async () => {
     }
 }
 
-const removeItem = (i) => {
-    listCart.value.splice(i, 1)
-}
-
 const openModal = () => {
     showModal.value = !showModal.value
 }
@@ -78,36 +78,35 @@ const subTotal = () => {
     return total
 }
  const Total = () =>{
-        return subTotal() - (form.value.discount)
+        return subTotal() - (invoice.value.discount)
 
 }
 
-const onSave = async () => {
+const onEdit = async () => {
     if (listCart.value.length >= 1) {
-        // Calculate subtotal and total
-        let subtotal = subTotal();
-        let total = Total();
+        const subtotal = subTotal();
+        const total = Total();
 
-        // Create FormData and append values
         const formData = {
-        'invoiceItem' :listCart.value,
-        'customer_id': customer_id.value,
-        'date': form.value.date,
-        'due_date': form.value.due_date,
-        'number': form.value.number,
-        'reference': form.value.reference,
-        'discount': form.value.discount,
-        'sub_total': subtotal,
-        'total': total,
-        'terms_and_conditions': form.value.terms_and_conditions,
-        }
+            invoiceItem: listCart.value,
+            customer_id: invoice.value.customer_id, // Fetch from `invoice`
+            date: invoice.value.date,
+            due_date: invoice.value.due_date,
+            number: invoice.value.number,
+            reference: invoice.value.reference,
+            discount: invoice.value.discount,
+            sub_total: subtotal,
+            total: total,
+            terms_and_conditions: invoice.value.terms_and_conditions,
+        };
+
         try {
-            console.log('DATA',formData)
-            await axios.post(`/invoices`, formData);
-            listCart.value = [];  
-            router.push('/'); 
+            console.log('DATA', formData);
+            await axios.post(`/invoices/${invoice.value.id}`, formData);
+            listCart.value = [];
+            router.push('/');
         } catch (error) {
-            console.log('Error adding invoice', error);
+            console.error('Error saving invoice:', error);
         }
     } else {
         console.log("Cart is empty, cannot save invoice.");
@@ -115,14 +114,27 @@ const onSave = async () => {
 };
 
 
+const deleteinvoiceItem = (id,i) =>{
+ invoice.value.invoiceItems.splite(i, 1)
+ if (id != undefined){
+    try {
+        axios.delete('/invoiceItems')
+    } catch (error) {
+        console.error('Error deleting invoice Item:', error);
+        
+    }
+ }
+}
+
 </script>
+
 <template>
     <div class="container">
         <div class="invoices">
 
             <div class="card__header">
                 <div>
-                    <h2 class="invoice__title">New Invoice</h2>
+                    <h2 class="invoice__title">Edit Invoice</h2>
                 </div>
                 <div>
 
@@ -133,23 +145,25 @@ const onSave = async () => {
                 <div class="card__content--header">
                     <div>
                         <p class="my-1">Customer</p>
-                        <select name="" id="" class="input" v-model="customer_id">
-                            <option disabled>Select customer</option>
+                        <select v-model="invoice.customer_id" class="input">
+                            <option disabled value="">Select a customer</option>
                             <option v-for="customer in customers" :key="customer.id" :value="customer.id">
-                                {{ customer.firstname }}</option>
+                                {{ customer.firstname }} {{ customer.lastname }}
+                            </option>
                         </select>
                     </div>
                     <div>
                         <p class="my-1">Date</p>
-                        <input id="date" placeholder="dd-mm-yyyy" type="date" class="input" v-model="form.date"> <!---->
-                        <p class="my-1">Due Date</p>
-                        <input id="due_date" type="date" class="input" v-model="form.due_date">
+                        <input id="date" placeholder="dd-mm-yyyy" type="date" class="input" v-model="invoice.date">
+                        <!---->
+                        <p class="my-1">Due date</p>
+                        <input id="due_date" type="date" class="input" v-model="invoice.due_date">
                     </div>
                     <div>
-                        <p class="my-1">Numero</p>
-                        <input type="text" class="input" v-model="form.number">
-                        <p class="my-1">Reference(Optional)</p>
-                        <input type="text" class="input" v-model="form.reference">
+                        <p class="my-1">Number</p>
+                        <input type="text" class="input" v-model="invoice.number">
+                        <p class="my-1">Reference</p>
+                        <input type="text" class="input" v-model="invoice.reference">
                     </div>
                 </div>
                 <br><br>
@@ -164,20 +178,18 @@ const onSave = async () => {
                     </div>
 
                     <!-- item 1 -->
-                    <div class="table--items2" v-for="(itemCart, i) in listCart" :key="itemCart.id">
-                        <input type="hidden" :value="itemCart.id">
-                        <p>#{{ itemCart.item_code }} {{ itemCart.description }} </p>
+                    <div class="table--items2" v-for="(item, i) in invoice.invoiceItems">
+                        <p v-if="item.product"># {{ item.product.item_code }} {{item.product.description}}</p>
                         <p>
-                            <input type="text" class="input" v-model="itemCart.unit_price" readonly>
+                            <input type="text" class="input" v-model="item.unit_price">
                         </p>
                         <p>
-                            <input type="text" class="input" v-model="itemCart.quantity">
+                            <input type="text" class="input" v-model="item.quantity">
                         </p>
-                        <p v-if="itemCart.quantity">
-                            {{ (itemCart.quantity) * (itemCart.unit_price) }} Dh
+                        <p>
+                            {{ item.unit_price * item.quantity }}
                         </p>
-                        <p v-else></p>
-                        <p style="color: red; font-size: 24px;cursor: pointer;" @click="removeItem(i)">
+                        <p style="color: red; font-size: 24px;cursor: pointer;" @click="deleteinvoiceItem(item.id , i)">
                             &times;
                         </p>
                     </div>
@@ -189,7 +201,7 @@ const onSave = async () => {
                 <div class="table__footer">
                     <div class="document-footer">
                         <p>Terms and Conditions</p>
-                        <textarea cols="50" rows="7" class="textarea" v-model="form.terms_and_conditions"></textarea>
+                        <textarea cols="50" rows="7" class="textarea" v-model="invoice.terms_and_conditions"></textarea>
                     </div>
                     <div>
                         <div class="table__footer--subtotal">
@@ -197,8 +209,8 @@ const onSave = async () => {
                             <span>{{subTotal()}} Dh</span>
                         </div>
                         <div class="table__footer--discount">
-                            <p>Discount %</p>
-                            <input type="text" class="input" v-model="form.discount"> 
+                            <p>Discount</p>
+                            <input type="text" class="input" v-model="invoice.discount">
                         </div>
                         <div class="table__footer--total">
                             <p>Grand Total</p>
@@ -214,21 +226,22 @@ const onSave = async () => {
 
                 </div>
                 <div>
-                    <a class="btn btn-secondary" @click="onSave()">
+                    <a class="btn btn-secondary" @click="onEdit()">
                         Save
                     </a>
                 </div>
             </div>
 
         </div>
-        <!--==================== add modal items ====================-->
-        <div class="modal main__modal " :class="{ show: showModal }">
-            <div class="modal__content">
-                <span class="modal__close btn__close--modal" @click="closeModal()">×</span>
-                <h3 class="modal__title">Add Item</h3>
-                <hr><br>
-                <div class="modal__items">
-                    <ul>
+    </div>
+    <!--==================== add modal items ====================-->
+    <div class="modal main__modal ">
+        <div class="modal__content">
+            <span class="modal__close btn__close--modal">×</span>
+            <h3 class="modal__title">Add Item</h3>
+            <hr><br>
+            <div class="modal__items">
+                 <ul>
                         <li v-for="(item, i) in listProducts" :key="item.id"
                             style="display:grid;grid-template-columns: 30px 350px 15px;align-items: center;padding-bottom: 5px;">
                             <p>{{ i + 1 }}</p>
@@ -238,15 +251,14 @@ const onSave = async () => {
                             </button>
                         </li>
                     </ul>
-                </div>
-                <br>
-                <hr>
-                <div class="model__footer">
-                    <button class="btn btn-light mr-2 btn__close--modal" @click="closeModal()">
-                        Cancel
-                    </button>
-                    <button class="btn btn-light btn__close--modal ">Save</button>
-                </div>
+            </div>
+            <br>
+            <hr>
+            <div class="model__footer">
+                <button class="btn btn-light mr-2 btn__close--modal">
+                    Cancel
+                </button>
+                <button class="btn btn-light btn__close--modal ">Save</button>
             </div>
         </div>
     </div>
