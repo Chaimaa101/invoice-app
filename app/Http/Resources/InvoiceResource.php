@@ -11,28 +11,16 @@ class InvoiceResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'customer' => $this->customer,
             'number' => $this->number,
-            'customer' => $this->customer ? [
-                'id' => $this->customer->id,
-                'firstname' => $this->customer->firstname,
-                'lastname' => $this->customer->lastname,
-                'email' => $this->customer->email,
-                'address' => $this->customer->address,
-            ] : null,
             'date' => $this->date,
             'due_date' => $this->due_date,
+            'reference' => $this->reference,
             'sub_total' => $this->sub_total,
             'discount' => $this->discount,
             'total' => $this->total,
             'terms_and_conditions' => $this->terms_and_conditions,
-            'invoiceItem' => $this->items && $this->items->isNotEmpty() ? $this->items->map(function ($item) {
-                return [
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product ? $item->product->name : null,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                ];
-            }) : [],
+            'invoiceItem' => InvoiceItemResource::collection($this->invoice_items),
         ];
     }
 }

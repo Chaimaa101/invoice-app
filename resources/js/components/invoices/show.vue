@@ -34,9 +34,21 @@ const print = () =>{
 const onEdit = async (id) =>{
     router.push(`/invoices/edit/` + id)
 }
+
+const deleteInvoice = async (id) => {
+    if (confirm('Are you sure you want to delete this invoice?')) {
+        try {
+            await axios.delete(`/invoices/${id}`);
+            
+            router.push('/'); // Redirect or refresh the list
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete the invoice');
+        }
+    }
+}
 </script>
 <template>
-    <div class="container">
     <div class="container">
         <div class="invoices">
         
@@ -56,30 +68,25 @@ const onEdit = async (id) =>{
     
             <div>
                 <ul  class="card__header-list">
-                    <li>µ
-                        <!-- Select Btn Option -->
+                    <li>
+                        
                         <button class="selectBtnFlat" @click="print()">
                             <i class="fas fa-print"></i>
                             Print
                         </button>
-                        <!-- End Select Btn Option -->
+                        
                     </li>
                     <li>
-                        <!-- Select Btn Option -->
                         <button class="selectBtnFlat" @click="onEdit(form.id)">
                             <i class=" fas fa-reply"></i>
                             Edit
-
                         </button>
-                        !-- End Select Btn Option -->
                     </li>
                     <li>
-                        <!-- Select Btn Option -->
-                        <button class="selectBtnFlat ">
+                        <button class="selectBtnFlat " @click="deleteInvoice(form.id)">
                             <i class=" fas fa-pencil-alt"></i>
                             Delete
                         </button>
-                        <!-- End Select Btn Option -->
                     </li>
                     
                 </ul>
@@ -184,6 +191,5 @@ const onEdit = async (id) =>{
         
     </div>
 
-    </div>
     </div>
 </template>

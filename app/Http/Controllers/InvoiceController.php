@@ -117,18 +117,55 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateInvoiceRequest $request, Invoice $invoice)
-    {
-        
+ * Update the specified resource in storage.
+ */
+public function update(UpdateInvoiceRequest $request, Invoice $invoice)
+{
+    $invoiceData = $request->only([
+        'sub_total',
+        'total',
+        'reference',
+        'number',
+        'terms_and_conditions',
+        'date',
+        'due_date',
+        'customer_id',
+        'discount',
+    ]);
+
+    $invoice->update($invoiceData);
+
+    // Update invoice items
+    $invoice->invoice_items()->delete(); // Delete old items
+    $invoiceItems = $request->input('invoiceItem');
+
+    foreach ($invoiceItems as $item) {
+        InvoiceItem::create([
+            'product_id' => $item['id'],
+            'invoice_id' => $invoice->id,
+            'quantity' => $item['quantity'],
+            'unit_price' => $item['unit_price'],
+        ]);
     }
 
+    return response()->json(['message' => 'Invoice updated successfully']);
+}
+
+
     /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Invoice $invoice)
-    {
-        //
+ * Remove the specified resource from storage.
+ */
+public function destroy(Invoice $invoice)
+{
+    try {
+        // Delete related items first
+        $invoice->invoice_items()->delete();
+        $invoice->delete();
+
+        return response()->json(['message' => 'Invoice deleted successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Failed to delete invoice'], 500);
     }
+}
+
 }
