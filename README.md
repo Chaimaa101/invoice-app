@@ -1,5 +1,5 @@
 <h1 align="center">
-	<img width="300" alt="CovoitFacile" src="https://github.com/Chaimaa101/">
+	<img width="300" alt="InvoiceMaker" src="https://github.com/Chaimaa101/">
 </h1>
 
 <h3 align="center">
